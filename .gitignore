@@ -1,0 +1,11 @@
+# .NET ignore
+**/[Bb]in/
+**/[Oo]bj/
+**/*.user
+**/*.rsuser
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+**/.vs/
+**/.idea/
+**/TestResults/
