@@ -1,0 +1,6 @@
+@OneIncTestTask_HostAddress = http://localhost:5160
+
+GET {{OneIncTestTask_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
