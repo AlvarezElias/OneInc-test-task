@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "kqyGpWh4ui4=",
+  "dgSpecHash": "smaDGwHRAcI=",
   "success": true,
-  "projectFilePath": "/Users/ealvarez/Source/Oneinc-test-task/api/OneIncTestTask/OneIncTestTask.csproj",
+  "projectFilePath": "/Users/ealvarez/Source/OneInc-test-task/api/OneIncTestTask/OneIncTestTask.csproj",
   "expectedPackageFiles": [
     "/Users/ealvarez/.nuget/packages/microsoft.aspnetcore.openapi/8.0.8/microsoft.aspnetcore.openapi.8.0.8.nupkg.sha512",
     "/Users/ealvarez/.nuget/packages/microsoft.extensions.apidescription.server/6.0.5/microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",

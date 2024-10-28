@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/ealvarez/Source/Oneinc-test-task/api/OneIncTestTask/OneIncTestTask.csproj": {}
+    "/Users/ealvarez/Source/OneInc-test-task/api/OneIncTestTask/OneIncTestTask.csproj": {}
   },
   "projects": {
-    "/Users/ealvarez/Source/Oneinc-test-task/api/OneIncTestTask/OneIncTestTask.csproj": {
+    "/Users/ealvarez/Source/OneInc-test-task/api/OneIncTestTask/OneIncTestTask.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/ealvarez/Source/Oneinc-test-task/api/OneIncTestTask/OneIncTestTask.csproj",
+        "projectUniqueName": "/Users/ealvarez/Source/OneInc-test-task/api/OneIncTestTask/OneIncTestTask.csproj",
         "projectName": "OneIncTestTask",
-        "projectPath": "/Users/ealvarez/Source/Oneinc-test-task/api/OneIncTestTask/OneIncTestTask.csproj",
+        "projectPath": "/Users/ealvarez/Source/OneInc-test-task/api/OneIncTestTask/OneIncTestTask.csproj",
         "packagesPath": "/Users/ealvarez/.nuget/packages/",
-        "outputPath": "/Users/ealvarez/Source/Oneinc-test-task/api/OneIncTestTask/obj/",
+        "outputPath": "/Users/ealvarez/Source/OneInc-test-task/api/OneIncTestTask/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/ealvarez/.nuget/NuGet/NuGet.Config"

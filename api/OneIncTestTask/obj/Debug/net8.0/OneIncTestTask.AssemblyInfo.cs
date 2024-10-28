@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("OneIncTestTask")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3b55504875a65b0db189b2f34cc012b8a8e83a5c")]
 [assembly: System.Reflection.AssemblyProductAttribute("OneIncTestTask")]
 [assembly: System.Reflection.AssemblyTitleAttribute("OneIncTestTask")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
