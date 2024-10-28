@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Net.WebSockets;
+using System.Text;
 
 namespace OneIncTestTask.Api.Controllers
 {
@@ -11,13 +13,37 @@ namespace OneIncTestTask.Api.Controllers
         public EncodingController(IEncodingService encodingService) {
             _encodingService = encodingService;
         }
-        // GET: api/Encoding/{inputText}
-        [HttpGet("{inputText}")]
-        public async Task<IActionResult> GetTextEncoding(string inputText) 
+        /// <summary>
+        /// GET: api/Encoding/{inputText}
+        /// Endpoint which encode an input text and return one character at a time
+        /// </summary>
+        /// <param name="inputText"></param>
+        /// <returns>An Ok response</returns>
+        [HttpGet("connect")]
+        public async Task ConnectWebSocket([FromQuery] string inputText) 
         {
-            var result = await _encodingService.GetEncodingInputText(inputText);
+            if(HttpContext.WebSockets.IsWebSocketRequest)
+            {
+                using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                
+                await GetTextEncoding(webSocket, inputText);
+            } 
+            else 
+            {
+                HttpContext.Response.StatusCode = 400;
+            }
+        }
 
-            return Ok(result);
+        private async Task GetTextEncoding(WebSocket webSocket, string inputText) 
+        {
+            await foreach(var _char in _encodingService.GetEncodingInputText(inputText)) 
+            {
+                var buffer = Encoding.UTF8.GetBytes(_char);
+                await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Completed", CancellationToken.None);
+        
         }
     }
 }

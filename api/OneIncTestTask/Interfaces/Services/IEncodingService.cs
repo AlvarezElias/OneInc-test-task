@@ -1,4 +1,4 @@
 public interface IEncodingService 
 {
-    public Task<string> GetEncodingInputText(string inputText);
+    public IAsyncEnumerable<string> GetEncodingInputText(string inputText);
 }
