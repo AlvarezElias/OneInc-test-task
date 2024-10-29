@@ -1,0 +1,35 @@
+.input-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+  }
+  
+  label {
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #ddd;
+  }
+  
+  /* Ajuste de inputs y botón */
+  input[type="text"] {
+    padding: 10px;
+    border: 1px solid #777;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #fff;
+  }
+  
+  button {
+    max-width: 65px;
+    padding: 10px;
+    background-color: #444;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  /* Espaciado final en el último grupo de entrada */
+  .input-group:last-child {
+    margin-bottom: 0;
+  }
