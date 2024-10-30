@@ -1,0 +1,13 @@
+<h3 class="title">Encoder text</h3>
+<div class="input-group">
+    <label for="inputText">Text to process</label>
+    <input id="inputText" [(ngModel)]="inputText" (ngModelChange)="onInputChange($event)" [disabled]="isDisabledInputText"  type="text"/>
+</div>
+<div class="input-group">
+    <button (click)="connectAndSendMessage(inputText)">Process</button>
+    <button (click)="cancelConnection()">Cancel</button>
+</div>
+<div class="input-group">
+    <label for="textResult">Result</label>
+    <input id="textResult" [(ngModel)]="encodedText" [disabled]=true  type="text"/>
+</div>
