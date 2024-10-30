@@ -23,20 +23,20 @@ namespace OneIncTestTask.Api.Services
                     yield break;
                 yield return groupedCharacters[i][0].ToString();
 
-                await Task.Delay(new Random().Next(100, 500));
+                await Task.Delay(new Random().Next(1000, 5000));
                 
                 if (cancellationToken.IsCancellationRequested)
                     yield break;
         
                 yield return groupedCharacters[i][1].ToString();
                 
-                await Task.Delay(new Random().Next(100, 500));
+                await Task.Delay(new Random().Next(1000, 5000));
             }
 
             if (!cancellationToken.IsCancellationRequested)
             yield return "/" + Convert.ToBase64String(Encoding.UTF8.GetBytes(inputText));
             
-            await Task.Delay(new Random().Next(100, 500));
+            await Task.Delay(new Random().Next(1000, 5000));
             if (!cancellationToken.IsCancellationRequested)
             yield return "FINISH_PROCESS";
         }
