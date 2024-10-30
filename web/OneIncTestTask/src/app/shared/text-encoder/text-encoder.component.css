@@ -1,3 +1,7 @@
+.title{
+  justify-self: center;
+}
+
 .input-group {
   display: flex;
   flex-direction: column;
@@ -17,14 +21,18 @@ input[type="text"] {
   border-radius: 4px;
   background-color: #fff;
   color: #777;
+  width: 350px;
 }
 
 .input-group:last-child {
   margin-bottom: 0;
 }
 
+label {
+  margin-top: 20px;
+}
+
 button {
-  max-width: 90px;
   font-size: 16px;
   padding: 10px 20px;
   background-color: #444;
@@ -34,6 +42,8 @@ button {
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease,
   background-color 0.2s ease;
+  width: 100%;
+  margin-top: 10px;
 }
 
 button:hover {

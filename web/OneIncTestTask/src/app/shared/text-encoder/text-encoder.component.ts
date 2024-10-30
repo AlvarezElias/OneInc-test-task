@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WebSocketService } from '../../services/web-socket.service';
-import { Subscription } from 'rxjs';
+import { debounceTime, Subject, Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -15,47 +15,80 @@ export class TextEncoderComponent implements OnInit, OnDestroy {
   encodedText: string = '';
   isDisabledInputText: boolean = false;
   private messageSubscription!: Subscription;
+  private openSubscription!: Subscription;
   private isConnected: boolean = false;
+  private inputSubject: Subject<string> = new Subject();
 
   constructor(private webSocketService: WebSocketService) {}
 
   ngOnInit(): void {
+    this.inputSubject.pipe(debounceTime(1200)).subscribe((value) => {
+      this.connectAndSendMessage(value);
+    });
 
+    this.messageSubscription = this.webSocketService.messages$.subscribe((message) => {
+      if(message == "FINISH_PROCESS") {
+        this.isDisabledInputText = false;
+      } else {
+        this.encodedText += message;
+      }
+    });
+  }
+  
+  onInputChange(value: string): void {
+    this.inputSubject.next(value);
+  }
+
+  connectAndSendMessage(message: string): void {
+    if (this.isConnected) {
+      this.sendMessage(message);
+      return;
+    }
+
+    if(this.isConnected){
+      this.sendMessage(this.inputText);
+    } else { 
+      this.connectWebSocket();
+
+      this.sendMessage(this.inputText);  
+
+    }
   }
 
   connectWebSocket(): void {
-    // deshabilitar input
-    if(!this.isConnected) {
-      this.webSocketService.connect(this.inputText);
-      this.isConnected = true;
+    if(this.inputText){
       this.isDisabledInputText = true;
-      this.messageSubscription = this.webSocketService.messages$.subscribe((message) => {
-        this.encodedText += message;
+    
+      this.webSocketService.connect();
+      
+      this.isConnected = true;  
+
+      this.openSubscription = this.webSocketService.open$.subscribe((status) => {
+        this.sendMessage(this.inputText);
       });
 
     }
-    // habilitar input
   }
 
-  sendMessage(): void {
-    console.log("cambio");
+  sendMessage(value: string): void {
     if(this.isConnected){
-      this.webSocketService.close();
+      this.isDisabledInputText = true;
       this.encodedText = "";
-      //this.webSocketService.sendMessage(this.inputText);
-      this.connectWebSocket();
+      this.webSocketService.sendMessage(value);
     }
   }
 
-  closeConnection(): void {
-    this.webSocketService.close();
-    this.encodedText = "";
+  cancelConnection(): void {
+    this.webSocketService.cancel();
     this.isConnected = false;
     this.isDisabledInputText = false;
   }
 
   ngOnDestroy(): void {
-    this.webSocketService.close();
+    this.webSocketService.cancel();
+    this.inputSubject.unsubscribe();
+    if(this.openSubscription)
+        this.openSubscription.unsubscribe();
     if(this.messageSubscription)
       this.messageSubscription.unsubscribe();
   }

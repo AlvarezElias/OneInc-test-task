@@ -9,8 +9,9 @@ namespace OneIncTestTask.Api.Controllers
     [Route("api/[controller]")]
     public class EncodingController: ControllerBase 
     {
+        private static ConcurrentDictionary<string, (WebSocket webSocket, CancellationTokenSource cancellationTokenSource)> _activeWebSockets = new();
+    
         private IEncodingService _encodingService;
-        private static ConcurrentDictionary<string, WebSocket> _activeWebSockets = new ConcurrentDictionary<string, WebSocket>();
 
         public EncodingController(IEncodingService encodingService) 
         {
@@ -18,70 +19,120 @@ namespace OneIncTestTask.Api.Controllers
         }
 
         /// <summary>
-        /// GET: api/Encoding/{inputText}
-        /// Endpoint which encode an input text and a connection Id.
+        /// GET: api/Encoding/{connectionId}
+        /// Stablish ws connection with a connection Id.
         /// </summary>
-        /// <param name="inputText"></param>
         /// <param name="connectionId"></param>
-        /// <returns>For each character, return this and a number of ocurrences in the inputText.</returns>
+        /// <returns>process a string.</returns>
         [HttpGet("connect")]
-        public async Task ConnectWebSocket([FromQuery] string inputText, [FromQuery] string connectionId) 
+        public async Task ConnectWebSocket([FromQuery] string connectionId)
         {
-            if(HttpContext.WebSockets.IsWebSocketRequest)
+            if (HttpContext.WebSockets.IsWebSocketRequest)
             {
-                using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                _activeWebSockets.TryAdd(connectionId, webSocket);
-                await GetTextEncoding(webSocket, inputText, connectionId);
-            } 
-            else 
+                var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+
+                // Configura un token de cancelación para cada conexión activa
+                var cancellationTokenSource = new CancellationTokenSource();
+                _activeWebSockets[connectionId] = (webSocket, cancellationTokenSource);
+
+                try
+                {
+                    // Inicia el bucle de recepción y procesamiento de mensajes
+                    await ReceiveAndProcessMessages(webSocket, connectionId, cancellationTokenSource.Token);
+                }
+                finally
+                {
+                    _activeWebSockets.TryRemove(connectionId, out _);
+                }
+            }
+            else
             {
                 HttpContext.Response.StatusCode = 400;
             }
         }
 
-        private async Task GetTextEncoding(WebSocket webSocket, string inputText, string connectionId) 
+        private async Task ReceiveAndProcessMessages(WebSocket webSocket, string connectionId, CancellationToken cancellationToken)
         {
-            var receiveBuffer = new byte[1024];
+            var closeReason = string.Empty;
+            try{
+                
+                var buffer = new byte[1024 * 4];
+                
+                while (webSocket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+                {
+                    var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Conexión cerrada", cancellationToken);
+                        break;
+                    }
+
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        var receivedText = Encoding.UTF8.GetString(buffer, 0, result.Count);
+
+                        await ProcessTextEncoding(webSocket, receivedText, cancellationToken);
+                    }
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                closeReason = "Operation canceled";
+            }
+            catch (WebSocketException ex)
+            {
+                closeReason = "WebSocket Error";
+            }
+            catch (Exception ex)
+            {
+                closeReason = "Error";
+            }
+            finally
+            {
+                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, closeReason, CancellationToken.None);
+            }
+        }
+
+        private async Task ProcessTextEncoding(WebSocket webSocket, string inputText, CancellationToken cancellationToken) 
+        {
             try 
             {
-                while(webSocket.State == WebSocketState.Open)
+                await foreach(var _char in _encodingService.GetEncodingInputText(inputText, cancellationToken)) 
                 {
-                    await foreach(var _char in _encodingService.GetEncodingInputText(inputText)) 
-                    {
-                        var buffer = Encoding.UTF8.GetBytes(_char);
-                        await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
-                    }
+                    if (cancellationToken.IsCancellationRequested) 
+                        break;
+
+                    await webSocket.SendAsync(
+                        new ArraySegment<byte>(Encoding.UTF8.GetBytes(_char)),
+                        WebSocketMessageType.Text, 
+                        true, 
+                        cancellationToken);
                 }
             } 
             catch(WebSocketException ex) 
             {
                 Console.WriteLine("Error: " + ex.Message);
-                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Error on server", CancellationToken.None);
             } 
-            finally 
-            {
-                if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Completed", CancellationToken.None);
-                _activeWebSockets.TryRemove(connectionId, out _); 
-            }
         }
-        
-        [HttpPut("close")]
-        public IActionResult CloseWebSocket([FromBody] string connectionId)
+        /// <summary>
+        /// Cancel a ws request by connectionId
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPost("cancel")]
+        public IActionResult CancelProcess([FromBody] CloseConnectionRequest request)
         {
-            if (_activeWebSockets.TryGetValue(connectionId, out var webSocket))
+            if (_activeWebSockets.TryGetValue(request.ConnectionId, out var entry))
             {
-                if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
-                {
-                    // Cierra la conexión WebSocket
-                    webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection close by request", CancellationToken.None);
-                    _activeWebSockets.TryRemove(connectionId, out _);
-                }
-                
-                return Ok("Connection closed");
+                entry.cancellationTokenSource.Cancel(); // Cancela el proceso actual
+                entry.cancellationTokenSource = new CancellationTokenSource(); // Renueva el token para el próximo proceso
+                _activeWebSockets[request.ConnectionId] = (entry.webSocket, entry.cancellationTokenSource);
+
+                return Ok(new { message = "Proceso cancelado, conexión mantenida." });
             }
-            
-            return NotFound("Not found connection.");
+
+            return NotFound(new { message = "No se encontró la conexión." });
         }
     }
 }

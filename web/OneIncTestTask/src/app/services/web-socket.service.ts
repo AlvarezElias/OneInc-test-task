@@ -10,21 +10,24 @@ export class WebSocketService {
   
   private webSocket: WebSocket | null = null;
   private messageSubject = new Subject<string>();
-  private connectionId: string = crypto.randomUUID();
+  private openSubject = new Subject<string>();
+  private _connectionId: string | null;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) { 
+    this._connectionId = crypto.randomUUID();
+  }
 
-  connect(inputText: string): void {
+  connect(): void {
 
-    if (this.webSocket && this.webSocket.readyState === WebSocket.OPEN)
-      this.close();
-    
+    if(!this.webSocket || this.webSocket.readyState == WebSocket.CLOSED) {
+      
+      this._connectionId ??= crypto.randomUUID();
 
-    if(!this.webSocket || this.webSocket.readyState == WebSocket.CLOSED){
-      this.webSocket = new WebSocket(`ws://localhost:5160/api/Encoding/connect?inputText=${inputText}&connectionId=${this.connectionId}`);
+      this.webSocket = new WebSocket(`ws://localhost:5160/api/Encoding/connect?connectionId=${this._connectionId}`);
 
       this.webSocket.onopen = () => {
         this.isProcessing = true;
+        this.openSubject.next("Connected");
       };
 
       this.webSocket.onmessage = (event) => {
@@ -32,8 +35,7 @@ export class WebSocketService {
       };
 
       this.webSocket.onclose = () =>  {
-        this.isProcessing = false;
-        this.webSocket = null;
+        this.close();
       };
 
       this.webSocket.onerror = () => {
@@ -42,36 +44,48 @@ export class WebSocketService {
     }
   }
 
+  isConnecting(): boolean | null {
+    return this.webSocket && this.webSocket.readyState == WebSocket.CONNECTING;
+  }
+
+  isOpenConnection(): boolean | null {
+    return this.webSocket && this.webSocket.readyState == WebSocket.OPEN;
+  }
+
   sendMessage(message: string): void {
     if(this.webSocket && this.webSocket.readyState == WebSocket.OPEN)
       this.webSocket.send(message);
-    
   }
 
   get messages$(): Observable<string> {
     return this.messageSubject.asObservable();
   }
 
-  close(): void {
-    if (this.webSocket && this.webSocket.readyState === WebSocket.OPEN){
-      this.http.put<string>('http://localhost:5160/api/Encoding/close', 
-        { 'connectionId': this.connectionId }, 
+  get open$(): Observable<string> {
+    return this.openSubject.asObservable();
+  }
+
+  cancel(): void {
+    if (this.webSocket && this.webSocket.readyState === WebSocket.OPEN)
+      this.http.post('http://localhost:5160/api/Encoding/cancel', 
+        { connectionId: this._connectionId },
         {
-          headers: { 
-            'Accept': '*/*', 
-            'Content-Type': 'text/json',
-          }
-        }).subscribe({
-          next: success => {
-            console.log('close connection');
-            this.webSocket?.close();
-          }, 
-          error: err => {
-            console.error('error closing connection', err);
-          },
-          complete: () => console.log("completed")
-        });
-    }
-      
+          headers: { 'Content-Type': 'application/json' }
+        }
+      ).subscribe({
+        next: success => {
+          console.log('Proceso cancelado');
+          this.isProcessing = false;
+        }, 
+        error: err => {
+          console.error('Error cancelando el proceso', err);
+        }
+      });
+  }
+
+  close(): void {
+    this.isProcessing = false;
+    this.webSocket?.close();
+    this._connectionId = crypto.randomUUID();
   }
 }

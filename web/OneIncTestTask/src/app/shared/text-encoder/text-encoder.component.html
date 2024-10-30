@@ -1,15 +1,13 @@
-<h3>Encoder text</h3>
+<h3 class="title">Encoder text</h3>
 <div class="input-group">
     <label for="inputText">Text to process</label>
-    <input [(ngModel)]="inputText" (ngModelChange)="sendMessage()" [disabled]="isDisabledInputText" id="inputText" type="text"/>
+    <input id="inputText" [(ngModel)]="inputText" (ngModelChange)="onInputChange($event)" [disabled]="isDisabledInputText"  type="text"/>
 </div>
 <div class="input-group">
-    <button (click)="connectWebSocket()">Process</button>
-</div>
-<div>
-    <button (click)="closeConnection()">Cancel</button>
+    <button (click)="connectAndSendMessage(inputText)">Process</button>
+    <button (click)="cancelConnection()">Cancel</button>
 </div>
 <div class="input-group">
     <label for="textResult">Result</label>
-    <input [(ngModel)]="encodedText" [disabled]=true type="textResult" type="text"/>
+    <input id="textResult" [(ngModel)]="encodedText" [disabled]=true  type="text"/>
 </div>
